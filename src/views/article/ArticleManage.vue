@@ -39,36 +39,36 @@ const state=ref('')
 
 //文章列表数据模型
 const articles = ref([
-    {
-        "id": 5,
-        "title": "陕西旅游攻略",
-        "content": "兵马俑,华清池,法门寺,华山...爱去哪去哪...",
-        "coverImg": "https://big-event-gwd.oss-cn-beijing.aliyuncs.com/9bf1cf5b-1420-4c1b-91ad-e0f4631cbed4.png",
-        "state": "草稿",
-        "categoryId": 2,
-        "createTime": "2023-09-03 11:55:30",
-        "updateTime": "2023-09-03 11:55:30"
-    },
-    {
-        "id": 5,
-        "title": "陕西旅游攻略",
-        "content": "兵马俑,华清池,法门寺,华山...爱去哪去哪...",
-        "coverImg": "https://big-event-gwd.oss-cn-beijing.aliyuncs.com/9bf1cf5b-1420-4c1b-91ad-e0f4631cbed4.png",
-        "state": "草稿",
-        "categoryId": 2,
-        "createTime": "2023-09-03 11:55:30",
-        "updateTime": "2023-09-03 11:55:30"
-    },
-    {
-        "id": 5,
-        "title": "陕西旅游攻略",
-        "content": "兵马俑,华清池,法门寺,华山...爱去哪去哪...",
-        "coverImg": "https://big-event-gwd.oss-cn-beijing.aliyuncs.com/9bf1cf5b-1420-4c1b-91ad-e0f4631cbed4.png",
-        "state": "草稿",
-        "categoryId": 2,
-        "createTime": "2023-09-03 11:55:30",
-        "updateTime": "2023-09-03 11:55:30"
-    },
+    // {
+    //     "id": 5,
+    //     "title": "陕西旅游攻略",
+    //     "content": "兵马俑,华清池,法门寺,华山...爱去哪去哪...",
+    //     "coverImg": "https://big-event-gwd.oss-cn-beijing.aliyuncs.com/9bf1cf5b-1420-4c1b-91ad-e0f4631cbed4.png",
+    //     "state": "草稿",
+    //     "categoryId": 2,
+    //     "createTime": "2023-09-03 11:55:30",
+    //     "updateTime": "2023-09-03 11:55:30"
+    // },
+    // {
+    //     "id": 5,
+    //     "title": "陕西旅游攻略",
+    //     "content": "兵马俑,华清池,法门寺,华山...爱去哪去哪...",
+    //     "coverImg": "https://big-event-gwd.oss-cn-beijing.aliyuncs.com/9bf1cf5b-1420-4c1b-91ad-e0f4631cbed4.png",
+    //     "state": "草稿",
+    //     "categoryId": 2,
+    //     "createTime": "2023-09-03 11:55:30",
+    //     "updateTime": "2023-09-03 11:55:30"
+    // },
+    // {
+    //     "id": 5,
+    //     "title": "陕西旅游攻略",
+    //     "content": "兵马俑,华清池,法门寺,华山...爱去哪去哪...",
+    //     "coverImg": "https://big-event-gwd.oss-cn-beijing.aliyuncs.com/9bf1cf5b-1420-4c1b-91ad-e0f4631cbed4.png",
+    //     "state": "草稿",
+    //     "categoryId": 2,
+    //     "createTime": "2023-09-03 11:55:30",
+    //     "updateTime": "2023-09-03 11:55:30"
+    // },
 ])
 
 //分页条数据模型
@@ -86,13 +86,39 @@ const onCurrentChange = (num) => {
 }
 
 // 回显文章分类
-import {articleCategoryListService} from '@/api/article.js'
+import {articleCategoryListService, articleListService} from '@/api/article.js'
 const articleCategoryList = async () => {
     let result = await articleCategoryListService()
     categorys.value = result.data
 }
 
+// 获取文章列表数据
+const articleList = async () => {
+    let params = {
+        pageNum: pageNum.value,
+        pageSize: pageSize.value,
+        categoryId: categoryId.value? categoryId.value : null,
+        state: state.value? state.value : null
+    }
+    let result = await articleListService(params)
+
+    // 渲染视图
+    total.value = result.data.total
+    articles.value = result.data.items
+
+    // 处理数据，拓展categoryName
+    for (let i = 0; i < articles.value.length; i++) {
+        let article = articles.value[i]
+        for (let j = 0; j < categorys.value.length; j++) {
+            if (article.categoryId == categorys.value[j].id) {
+                article.categoryName = categorys.value[j].categoryName
+            }
+        }
+    }
+}
+
 articleCategoryList()
+articleList()
 </script>
 <template>
     <el-card class="page-container">
@@ -124,14 +150,14 @@ articleCategoryList()
                 </el-select>
             </el-form-item>
             <el-form-item>
-                <el-button type="primary">搜索</el-button>
-                <el-button>重置</el-button>
+                <el-button type="primary" @click="articleList">搜索</el-button>
+                <el-button @click="categoryId='';state=''">重置</el-button>
             </el-form-item>
         </el-form>
         <!-- 文章列表 -->
         <el-table :data="articles" style="width: 100%">
             <el-table-column label="文章标题" width="400" prop="title"></el-table-column>
-            <el-table-column label="分类" prop="categoryId"></el-table-column>
+            <el-table-column label="分类" prop="categoryName"></el-table-column>
             <el-table-column label="发表时间" prop="createTime"> </el-table-column>
             <el-table-column label="状态" prop="state"></el-table-column>
             <el-table-column label="操作" width="100">
