@@ -1,7 +1,7 @@
 <script setup>
 import {
-    Edit,
-    Delete
+    Delete,
+    Edit
 } from '@element-plus/icons-vue'
 
 import { ref } from 'vue'
@@ -86,7 +86,7 @@ const onCurrentChange = (num) => {
 }
 
 // 回显文章分类
-import {articleCategoryListService, articleListService} from '@/api/article.js'
+import { articleCategoryListService, articleListService } from '@/api/article.js'
 const articleCategoryList = async () => {
     let result = await articleCategoryListService()
     categorys.value = result.data
@@ -133,7 +133,7 @@ articleList()
         <!-- 搜索表单 -->
         <el-form inline>
             <el-form-item label="文章分类：">
-                <el-select placeholder="请选择" v-model="categoryId">
+                <el-select placeholder="请选择" v-model="categoryId" style="width: 200px">
                     <el-option 
                         v-for="c in categorys" 
                         :key="c.id" 
@@ -144,7 +144,7 @@ articleList()
             </el-form-item>
 
             <el-form-item label="发布状态：">
-                <el-select placeholder="请选择" v-model="state">
+                <el-select placeholder="请选择" v-model="state" style="width: 200px">
                     <el-option label="已发布" value="已发布"></el-option>
                     <el-option label="草稿" value="草稿"></el-option>
                 </el-select>
