@@ -32,10 +32,10 @@ const categorys = ref([
 ])
 
 //用户搜索时选中的分类id
-const categoryId=ref('')
+const categoryId = ref('')
 
 //用户搜索时选中的发布状态
-const state=ref('')
+const state = ref('')
 
 //文章列表数据模型
 const articles = ref([
@@ -79,14 +79,16 @@ const pageSize = ref(3)//每页条数
 //当每页条数发生了变化，调用此函数
 const onSizeChange = (size) => {
     pageSize.value = size
+    articleList()
 }
 //当前页码发生变化，调用此函数
 const onCurrentChange = (num) => {
     pageNum.value = num
+    articleList()
 }
 
 // 回显文章分类
-import { articleCategoryListService, articleListService } from '@/api/article.js'
+import { articleAddService, articleCategoryListService, articleListService, articleUpdateService, articleDeleteService } from '@/api/article.js'
 const articleCategoryList = async () => {
     let result = await articleCategoryListService()
     categorys.value = result.data
@@ -97,8 +99,8 @@ const articleList = async () => {
     let params = {
         pageNum: pageNum.value,
         pageSize: pageSize.value,
-        categoryId: categoryId.value? categoryId.value : null,
-        state: state.value? state.value : null
+        categoryId: categoryId.value ? categoryId.value : null,
+        state: state.value ? state.value : null
     }
     let result = await articleListService(params)
 
@@ -119,6 +121,124 @@ const articleList = async () => {
 
 articleCategoryList()
 articleList()
+
+import { Plus } from '@element-plus/icons-vue'
+import { QuillEditor } from '@vueup/vue-quill'
+import '@vueup/vue-quill/dist/vue-quill.snow.css'
+//控制抽屉是否显示
+const visibleDrawer = ref(false)
+// 抽屉标题
+const drawerTitle = ref('')
+//添加表单数据模型
+const articleModel = ref({
+    title: '',
+    categoryId: '',
+    coverImg: '',
+    content: '',
+    state: ''
+})
+
+// 导入token
+import { useTokenStore } from '@/stores/token.js'
+const tokenStore = useTokenStore()
+
+// 上传成功的回调
+const uploadSuccess = (result) => {
+    articleModel.value.coverImg = result.data
+    console.log(result.data);
+
+}
+
+// 添加文章
+import { ElMessage } from 'element-plus'
+const addArticle = async (clickState) => {
+    // 文章状态赋值
+    articleModel.value.state = clickState
+
+    // 调用接口
+    let result = await articleAddService(articleModel.value)
+    ElMessage.success(result.msg ? result.msg : '添加成功')
+
+    // 关闭抽屉
+    visibleDrawer.value = false
+
+    // 刷新当前列表
+    articleList()
+}
+
+// 删除抽屉里的数据
+const clearData = () => {
+    addArticle.value = {
+        title: '',
+        categoryId: '',
+        coverImg: '',
+        content: '',
+        state: ''
+    }
+}
+
+// 显示添加文章的抽屉
+const showAddArticle = () => {
+    clearData()
+    drawerTitle.value = '添加文章'
+    visibleDrawer.value = true
+}
+
+// 显示修改和删除文章的抽屉
+const showUpdateArticle = (row) => {
+    drawerTitle.value = '修改文章'
+    visibleDrawer.value = true
+    articleModel.value = {
+        ...row
+    }
+}
+
+// 修改文章
+const updateArticle = async (clickState) => {
+    // 文章状态赋值
+    articleModel.value.state = clickState
+    // 调用接口
+    let result = await articleUpdateService(articleModel.value)
+    ElMessage.success(result.msg ? result.msg : '修改成功')
+
+    // 关闭抽屉
+    visibleDrawer.value = false
+
+    // 刷新当前列表
+    articleList()
+}
+
+import { ElMessageBox } from 'element-plus'
+
+// 删除文章
+const deleteArticle = async (row) => {
+    ElMessageBox.confirm(
+        '你确认删除该文章吗？',
+        '温馨提示',
+        {
+            confirmButtonText: '确认',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    )
+        .then(async () => {
+            //用户点击了确认
+            let result = await articleDeleteService(row.id)
+            ElMessage({
+                type: 'success',
+                message: '删除成功',
+            })
+            articleList()
+        })
+        .catch(() => {
+            //用户点击了取消
+            ElMessage({
+                type: 'info',
+                message: '取消删除',
+            })
+        })
+}
+
 </script>
 <template>
     <el-card class="page-container">
@@ -126,7 +246,7 @@ articleList()
             <div class="header">
                 <span>文章管理</span>
                 <div class="extra">
-                    <el-button type="primary">添加文章</el-button>
+                    <el-button type="primary" @click="showAddArticle">添加文章</el-button>
                 </div>
             </div>
         </template>
@@ -134,11 +254,7 @@ articleList()
         <el-form inline>
             <el-form-item label="文章分类：">
                 <el-select placeholder="请选择" v-model="categoryId" style="width: 200px">
-                    <el-option 
-                        v-for="c in categorys" 
-                        :key="c.id" 
-                        :label="c.categoryName"
-                        :value="c.id">
+                    <el-option v-for="c in categorys" :key="c.id" :label="c.categoryName" :value="c.id">
                     </el-option>
                 </el-select>
             </el-form-item>
@@ -151,7 +267,7 @@ articleList()
             </el-form-item>
             <el-form-item>
                 <el-button type="primary" @click="articleList">搜索</el-button>
-                <el-button @click="categoryId='';state=''">重置</el-button>
+                <el-button @click="categoryId = ''; state = ''">重置</el-button>
             </el-form-item>
         </el-form>
         <!-- 文章列表 -->
@@ -162,8 +278,8 @@ articleList()
             <el-table-column label="状态" prop="state"></el-table-column>
             <el-table-column label="操作" width="100">
                 <template #default="{ row }">
-                    <el-button :icon="Edit" circle plain type="primary"></el-button>
-                    <el-button :icon="Delete" circle plain type="danger"></el-button>
+                    <el-button :icon="Edit" circle plain type="primary" @click="showUpdateArticle(row)"></el-button>
+                    <el-button :icon="Delete" circle plain type="danger" @click="deleteArticle(row)"></el-button>
                 </template>
             </el-table-column>
             <template #empty>
@@ -171,9 +287,53 @@ articleList()
             </template>
         </el-table>
         <!-- 分页条 -->
-        <el-pagination v-model:current-page="pageNum" v-model:page-size="pageSize" :page-sizes="[3, 5 ,10, 15]"
+        <el-pagination v-model:current-page="pageNum" v-model:page-size="pageSize" :page-sizes="[3, 5, 10, 15]"
             layout="jumper, total, sizes, prev, pager, next" background :total="total" @size-change="onSizeChange"
             @current-change="onCurrentChange" style="margin-top: 20px; justify-content: flex-end" />
+
+        <!-- 抽屉 -->
+        <el-drawer v-model="visibleDrawer" :title="drawerTitle" direction="rtl" size="50%">
+            <!-- 添加文章表单 -->
+            <el-form :model="articleModel" label-width="100px">
+                <el-form-item label="文章标题">
+                    <el-input v-model="articleModel.title" placeholder="请输入标题"></el-input>
+                </el-form-item>
+                <el-form-item label="文章分类">
+                    <el-select placeholder="请选择" v-model="articleModel.categoryId">
+                        <el-option v-for="c in categorys" :key="c.id" :label="c.categoryName" :value="c.id">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="文章封面">
+                    <!-- 
+                        auto-upload: 设置是否自动上传
+                        action: 服务器接口路径
+                        name: 上传的文件字段名
+                        headers: 设置请求头
+                        on-success: 上传成功的回调
+                      -->
+                    <el-upload class="avatar-uploader" :auto-upload="true" :show-file-list="false" action="/api/upload"
+                        name="file" :headers="{ Authorization: tokenStore.token }" :on-success="uploadSuccess">
+                        <img v-if="articleModel.coverImg" :src="articleModel.coverImg" class="avatar" />
+                        <el-icon v-else class="avatar-uploader-icon">
+                            <Plus />
+                        </el-icon>
+                    </el-upload>
+                </el-form-item>
+                <el-form-item label="文章内容">
+                    <div class="editor">
+                        <quill-editor theme="snow" v-model:content="articleModel.content" contentType="html">
+                        </quill-editor>
+                    </div>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary"
+                        @click="drawerTitle === '添加文章' ? addArticle('已发布') : updateArticle('已发布')">发布</el-button>
+                    <el-button type="info"
+                        @click="drawerTitle === '添加文章' ? addArticle('草稿') : updateArticle('草稿')">草稿</el-button>
+                </el-form-item>
+            </el-form>
+        </el-drawer>
     </el-card>
 </template>
 <style lang="scss" scoped>
@@ -190,5 +350,45 @@ articleList()
 
 body {
     font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 抽屉样式 */
+.avatar-uploader {
+    :deep() {
+        .avatar {
+            width: 178px;
+            height: 178px;
+            display: block;
+        }
+
+        .el-upload {
+            border: 1px dashed var(--el-border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: var(--el-transition-duration-fast);
+        }
+
+        .el-upload:hover {
+            border-color: var(--el-color-primary);
+        }
+
+        .el-icon.avatar-uploader-icon {
+            font-size: 28px;
+            color: #8c939d;
+            width: 178px;
+            height: 178px;
+            text-align: center;
+        }
+    }
+}
+
+.editor {
+    width: 100%;
+
+    :deep(.ql-editor) {
+        min-height: 200px;
+    }
 }
 </style>
