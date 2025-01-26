@@ -24,3 +24,20 @@ export const userLoginService = (loginData) => {
 export const userInfoService = () => {
     return request.get('/user/userInfo')
 }
+
+// 更新用户信息
+export const userInfoUpdateService = (userInfoData)=>{
+    return request.put('/user/update', userInfoData)
+}
+
+// 修改用户头像
+export const userAvatarUpdateService = (avatarUrl)=>{
+    const params = new URLSearchParams()
+    params.append('avatarUrl', avatarUrl)
+    return request.patch('/user/updateAvatar', params)
+}
+
+// 更新用户密码
+export const userPasswordUpdateService = (userPasswordData)=>{
+    return request.patch('/user/updatePwd', userPasswordData)
+}
